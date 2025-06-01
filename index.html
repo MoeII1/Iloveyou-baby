@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Princess Warrior Quest - Multi-Level</title>
+<title>Princess Warrior Quest (Cute Mario Style)</title>
 <style>
   html, body {
     margin: 0; padding: 0; overflow: hidden;
-    background: #a3d9ff;
+    background: #a3d9ff; /* sky blue */
     font-family: 'Comic Sans MS', cursive, sans-serif;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -49,14 +49,6 @@
     box-shadow: 0 2px 0 #d67a8e;
     transform: translateY(2px);
   }
-  #coinCounter {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    font-size: 1.5em;
-    color: #ff6699;
-    user-select: none;
-  }
   #endScreen {
     position: fixed;
     top:0; left:0; right:0; bottom:0;
@@ -70,7 +62,6 @@
     text-align: center;
     visibility: hidden;
     flex-direction: column;
-    padding: 20px;
   }
   #endScreen.animate {
     animation: fadein 2s ease forwards;
@@ -90,8 +81,6 @@
   <button id="jumpBtn" class="control">▲</button>
   <button id="rightBtn" class="control">▶</button>
 </div>
-
-<div id="coinCounter">Coins: 0</div>
 
 <div id="endScreen">I love you my pretty princess 💖</div>
 
@@ -129,90 +118,32 @@
     color: '#ff66aa',
   };
 
-  // Coin count
-  let totalCoins = 0;
-
-  // Camera offset
-  let camX = 0;
-
-  // Level data - multiple levels with platforms, spikes, enemies, coins
-  const levels = [
-    {
-      length: 1100,
-      platforms: [
-        {x: 0, y: H - 20, w: 1100, h: 20},
-        {x: 200, y: H - 70, w: 60, h: 15},
-        {x: 280, y: H - 120, w: 60, h: 15},
-        {x: 400, y: H - 70, w: 60, h: 15},
-        {x: 480, y: H - 150, w: 60, h: 15},
-        {x: 600, y: H - 70, w: 60, h: 15},
-        {x: 680, y: H - 120, w: 60, h: 15},
-        {x: 800, y: H - 70, w: 60, h: 15},
-        {x: 880, y: H - 150, w: 60, h: 15},
-        {x: 950, y: H - 70, w: 60, h: 15},
-      ],
-      spikes: [
-        {x: 350, y: H - 35, w: 20, h: 15},
-        {x: 720, y: H - 35, w: 20, h: 15},
-        {x: 920, y: H - 35, w: 20, h: 15},
-      ],
-      coins: [
-        {x: 220, y: H - 100, w: 16, h: 16},
-        {x: 300, y: H - 150, w: 16, h: 16},
-        {x: 480, y: H - 180, w: 16, h: 16},
-        {x: 600, y: H - 100, w: 16, h: 16},
-        {x: 880, y: H - 180, w: 16, h: 16},
-      ],
-      enemies: [
-        {x: 450, y: H - 35 - 32, w: 32, h: 32, vx: 1.5, range: [450, 510]},
-        {x: 750, y: H - 35 - 32, w: 32, h: 32, vx: 2, range: [720, 780]},
-      ],
-    },
-    {
-      length: 1300,
-      platforms: [
-        {x: 0, y: H - 20, w: 1300, h: 20},
-        {x: 150, y: H - 70, w: 80, h: 15},
-        {x: 270, y: H - 120, w: 70, h: 15},
-        {x: 400, y: H - 90, w: 50, h: 15},
-        {x: 500, y: H - 140, w: 70, h: 15},
-        {x: 620, y: H - 70, w: 80, h: 15},
-        {x: 750, y: H - 120, w: 60, h: 15},
-        {x: 880, y: H - 70, w: 60, h: 15},
-        {x: 1000, y: H - 150, w: 60, h: 15},
-        {x: 1100, y: H - 70, w: 100, h: 15},
-      ],
-      spikes: [
-        {x: 350, y: H - 35, w: 20, h: 15},
-        {x: 900, y: H - 35, w: 20, h: 15},
-        {x: 1150, y: H - 35, w: 20, h: 15},
-      ],
-      coins: [
-        {x: 170, y: H - 100, w: 16, h: 16},
-        {x: 280, y: H - 150, w: 16, h: 16},
-        {x: 510, y: H - 170, w: 16, h: 16},
-        {x: 760, y: H - 150, w: 16, h: 16},
-        {x: 1080, y: H - 100, w: 16, h: 16},
-      ],
-      enemies: [
-        {x: 500, y: H - 35 - 32, w: 32, h: 32, vx: 1.8, range: [500, 570]},
-        {x: 1000, y: H - 35 - 32, w: 32, h: 32, vx: 2.2, range: [1000, 1100]},
-      ],
-    }
+  // Level data - platforms (x, y, width, height)
+  const platforms = [
+    {x: 0, y: H - 20, w: 1000, h: 20}, // ground long
+    {x: 200, y: H - 70, w: 60, h: 15},
+    {x: 280, y: H - 120, w: 60, h: 15},
+    {x: 400, y: H - 70, w: 60, h: 15},
+    {x: 480, y: H - 150, w: 60, h: 15},
+    {x: 600, y: H - 70, w: 60, h: 15},
+    {x: 680, y: H - 120, w: 60, h: 15},
+    {x: 800, y: H - 70, w: 60, h: 15},
+    {x: 880, y: H - 150, w: 60, h: 15},
+    {x: 950, y: H - 70, w: 60, h: 15},
   ];
 
-  let currentLevelIndex = 0;
-  let currentLevel = levels[currentLevelIndex];
+  // Obstacles (spikes) - same coords as platforms
+  const spikes = [
+    {x: 350, y: H - 20 - 15, w: 20, h: 15},
+    {x: 720, y: H - 20 - 15, w: 20, h: 15},
+    {x: 920, y: H - 20 - 15, w: 20, h: 15},
+  ];
 
-  // Player respawn start position
-  const startX = 50;
-  const startY = H - 50;
+  // Level length
+  const levelWidth = 1100;
 
-  // UI coin counter
-  const coinCounter = document.getElementById('coinCounter');
-
-  // End screen element
-  const endScreen = document.getElementById('endScreen');
+  // Camera offset for side scroll
+  let camX = 0;
 
   // Input handlers
   function keyDown(e) {
@@ -248,67 +179,158 @@
              r2.y + r2.h < r1.y);
   }
 
-  // Reset player to start of current level
+  // Reset player on death
   function resetPlayer() {
-    player.x = startX;
-    player.y = startY;
+    player.x = 50;
+    player.y = H - 50;
     player.vx = 0;
     player.vy = 0;
-    player.jumping = false;
   }
 
-  // Handle enemy-player collisions
-  function handleEnemyCollision(enemy, i) {
-    if (rectIntersect(player, enemy)) {
-      // Check if player hits enemy from top
-      if (player.vy > 0 && (player.y + player.h) - enemy.y < 15) {
-        // Enemy defeated
-        currentLevel.enemies.splice(i, 1);
-        player.vy = -10; // bounce up
-      } else {
-        // Player hurt - reset level
-        resetPlayer();
-      }
-    }
-  }
-
-  // Handle coin collection
-  function handleCoinCollection(coin, i) {
-    if (rectIntersect(player, coin)) {
-      // Remove coin
-      currentLevel.coins.splice(i, 1);
-      totalCoins++;
-      coinCounter.textContent = `Coins: ${totalCoins}`;
-    }
-  }
-
-  // Game end handler
-  function endGame() {
-    running = false;
-    endScreen.style.visibility = 'visible';
-    endScreen.classList.add('animate');
-  }
-
-  // Load next level or end game
-  function nextLevel() {
-    currentLevelIndex++;
-    if (currentLevelIndex >= levels.length) {
-      // All levels done!
-      endGame();
-    } else {
-      currentLevel = levels[currentLevelIndex];
-      resetPlayer();
-      camX = 0;
-      running = true;
-      endScreen.style.visibility = 'hidden';
-      endScreen.classList.remove('animate');
-      loop();
-    }
-  }
+  // End screen elements
+  const endScreen = document.getElementById('endScreen');
 
   // Main update loop
   function update() {
     // Horizontal movement
     if (keys.left) {
       player.vx = -player.speed;
-    } else if (keys
+    } else if (keys.right) {
+      player.vx = player.speed;
+    } else {
+      player.vx *= friction;
+      if (Math.abs(player.vx) < 0.1) player.vx = 0;
+    }
+
+    // Jumping
+    if (keys.jump && !player.jumping && onGround) {
+      player.vy = -12;
+      player.jumping = true;
+      onGround = false;
+    }
+
+    // Gravity
+    player.vy += gravity;
+    if (player.vy > 12) player.vy = 12;
+
+    // Move player
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // Boundaries left/right
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.w > levelWidth) player.x = levelWidth - player.w;
+
+    // Collision with platforms
+    onGround = false;
+    for (let p of platforms) {
+      // Simplified AABB collision check
+      if (player.x + player.w > p.x && player.x < p.x + p.w) {
+        if (player.y + player.h > p.y && player.y + player.h < p.y + p.h) {
+          // Land on platform
+          player.y = p.y - player.h;
+          player.vy = 0;
+          onGround = true;
+          player.jumping = false;
+        }
+      }
+    }
+
+    // Collision with spikes (death)
+    for (let s of spikes) {
+      if (rectIntersect(player, s)) {
+        resetPlayer();
+      }
+    }
+
+    // Update camera (center on player but clamp)
+    camX = player.x - W / 3;
+    if (camX < 0) camX = 0;
+    if (camX > levelWidth - W) camX = levelWidth - W;
+
+    // Check if reached end of level
+    if (player.x + player.w >= levelWidth - 50) {
+      endGame();
+    }
+  }
+
+  // Draw everything
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw background
+    ctx.fillStyle = '#cceeff';
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw platforms
+    for (let p of platforms) {
+      ctx.fillStyle = '#ff9fc9'; // cute pink platform
+      ctx.fillRect(p.x - camX, p.y, p.w, p.h);
+      // platform outline
+      ctx.strokeStyle = '#e67ea1';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(p.x - camX, p.y, p.w, p.h);
+    }
+
+    // Draw spikes
+    for (let s of spikes) {
+      ctx.fillStyle = '#ff4d6d';
+      ctx.beginPath();
+      let spikeBaseX = s.x - camX;
+      let spikeBaseY = s.y + s.h;
+      let spikeWidth = s.w;
+      let spikeHeight = s.h;
+      // draw 3 spikes per obstacle width
+      let spikeCount = 3;
+      let spikeW = spikeWidth / spikeCount;
+      for(let i = 0; i < spikeCount; i++) {
+        ctx.moveTo(spikeBaseX + i * spikeW, spikeBaseY);
+        ctx.lineTo(spikeBaseX + i * spikeW + spikeW / 2, spikeBaseY - spikeHeight);
+        ctx.lineTo(spikeBaseX + (i + 1) * spikeW, spikeBaseY);
+      }
+      ctx.fill();
+    }
+
+    // Draw player (cute pink square with eyes)
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x - camX, player.y, player.w, player.h);
+
+    // Eyes
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.ellipse(player.x - camX + 10, player.y + 15, 5, 7, 0, 0, 2 * Math.PI);
+    ctx.ellipse(player.x - camX + 22, player.y + 15, 5, 7, 0, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.ellipse(player.x - camX + 10, player.y + 15, 2, 4, 0, 0, 2 * Math.PI);
+    ctx.ellipse(player.x - camX + 22, player.y + 15, 2, 4, 0, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+
+  // Game end handler
+  function endGame() {
+    // Stop game loop and show end message with animation
+    running = false;
+    endScreen.style.visibility = 'visible';
+    endScreen.classList.add('animate');
+  }
+
+  // Game loop
+  let running = true;
+  function loop() {
+    if (!running) return;
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // Start game loop
+  loop();
+
+})();
+</script>
+
+</body>
+</html>
