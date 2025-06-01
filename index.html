@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Princess Warrior Quest - Powerups & Trail</title>
+<title>Princess Warrior Quest - Multi-Level</title>
 <style>
   html, body {
     margin: 0; padding: 0; overflow: hidden;
@@ -57,15 +57,6 @@
     color: #ff6699;
     user-select: none;
   }
-  #powerupIndicator {
-    position: fixed;
-    top: 40px;
-    left: 10px;
-    font-size: 1.2em;
-    color: #ff3399;
-    user-select: none;
-    min-width: 150px;
-  }
   #endScreen {
     position: fixed;
     top:0; left:0; right:0; bottom:0;
@@ -101,7 +92,6 @@
 </div>
 
 <div id="coinCounter">Coins: 0</div>
-<div id="powerupIndicator"></div>
 
 <div id="endScreen">I love you my pretty princess 💖</div>
 
@@ -122,6 +112,7 @@
 
   // Game variables
   let keys = { left: false, right: false, jump: false };
+  let onGround = false;
   const gravity = 0.6;
   const friction = 0.7;
 
@@ -134,14 +125,8 @@
     vx: 0,
     vy: 0,
     speed: 3,
-    jumpPower: 12,
     jumping: false,
     color: '#ff66aa',
-    trail: [],
-    powerups: {
-      speedBoost: 0,
-      jumpBoost: 0,
-    }
   };
 
   // Coin count
@@ -150,7 +135,7 @@
   // Camera offset
   let camX = 0;
 
-  // Level data - platforms, spikes, enemies, coins with powerups
+  // Level data - multiple levels with platforms, spikes, enemies, coins
   const levels = [
     {
       length: 1100,
@@ -172,15 +157,46 @@
         {x: 920, y: H - 35, w: 20, h: 15},
       ],
       coins: [
-        {x: 220, y: H - 100, w: 16, h: 16, powerup: null},
-        {x: 300, y: H - 150, w: 16, h: 16, powerup: 'speedBoost'},
-        {x: 480, y: H - 180, w: 16, h: 16, powerup: null},
-        {x: 600, y: H - 100, w: 16, h: 16, powerup: 'jumpBoost'},
-        {x: 880, y: H - 180, w: 16, h: 16, powerup: null},
+        {x: 220, y: H - 100, w: 16, h: 16},
+        {x: 300, y: H - 150, w: 16, h: 16},
+        {x: 480, y: H - 180, w: 16, h: 16},
+        {x: 600, y: H - 100, w: 16, h: 16},
+        {x: 880, y: H - 180, w: 16, h: 16},
       ],
       enemies: [
-        {x: 450, y: H - 35 - 32, w: 32, h: 32, vx: 1.5, range: [450, 510], color: '#ff5577'},
-        {x: 750, y: H - 35 - 32, w: 32, h: 32, vx: 2, range: [720, 780], color: '#ff5577'},
+        {x: 450, y: H - 35 - 32, w: 32, h: 32, vx: 1.5, range: [450, 510]},
+        {x: 750, y: H - 35 - 32, w: 32, h: 32, vx: 2, range: [720, 780]},
+      ],
+    },
+    {
+      length: 1300,
+      platforms: [
+        {x: 0, y: H - 20, w: 1300, h: 20},
+        {x: 150, y: H - 70, w: 80, h: 15},
+        {x: 270, y: H - 120, w: 70, h: 15},
+        {x: 400, y: H - 90, w: 50, h: 15},
+        {x: 500, y: H - 140, w: 70, h: 15},
+        {x: 620, y: H - 70, w: 80, h: 15},
+        {x: 750, y: H - 120, w: 60, h: 15},
+        {x: 880, y: H - 70, w: 60, h: 15},
+        {x: 1000, y: H - 150, w: 60, h: 15},
+        {x: 1100, y: H - 70, w: 100, h: 15},
+      ],
+      spikes: [
+        {x: 350, y: H - 35, w: 20, h: 15},
+        {x: 900, y: H - 35, w: 20, h: 15},
+        {x: 1150, y: H - 35, w: 20, h: 15},
+      ],
+      coins: [
+        {x: 170, y: H - 100, w: 16, h: 16},
+        {x: 280, y: H - 150, w: 16, h: 16},
+        {x: 510, y: H - 170, w: 16, h: 16},
+        {x: 760, y: H - 150, w: 16, h: 16},
+        {x: 1080, y: H - 100, w: 16, h: 16},
+      ],
+      enemies: [
+        {x: 500, y: H - 35 - 32, w: 32, h: 32, vx: 1.8, range: [500, 570]},
+        {x: 1000, y: H - 35 - 32, w: 32, h: 32, vx: 2.2, range: [1000, 1100]},
       ],
     }
   ];
@@ -192,9 +208,10 @@
   const startX = 50;
   const startY = H - 50;
 
-  // UI elements
+  // UI coin counter
   const coinCounter = document.getElementById('coinCounter');
-  const powerupIndicator = document.getElementById('powerupIndicator');
+
+  // End screen element
   const endScreen = document.getElementById('endScreen');
 
   // Input handlers
@@ -238,10 +255,6 @@
     player.vx = 0;
     player.vy = 0;
     player.jumping = false;
-    player.trail = [];
-    player.powerups.speedBoost = 0;
-    player.powerups.jumpBoost = 0;
-    powerupIndicator.textContent = '';
   }
 
   // Handle enemy-player collisions
@@ -259,41 +272,13 @@
     }
   }
 
-  // Handle coin collection & powerups
+  // Handle coin collection
   function handleCoinCollection(coin, i) {
     if (rectIntersect(player, coin)) {
       // Remove coin
       currentLevel.coins.splice(i, 1);
       totalCoins++;
       coinCounter.textContent = `Coins: ${totalCoins}`;
-      if (coin.powerup) {
-        activatePowerup(coin.powerup);
-      }
-    }
-  }
-
-  // Activate powerup and set timers
-  function activatePowerup(type) {
-    const duration = 5000; // 5 seconds duration
-    if (type === 'speedBoost') {
-      player.powerups.speedBoost = Date.now() + duration;
-      powerupIndicator.textContent = 'Speed Boost!';
-    } else if (type === 'jumpBoost') {
-      player.powerups.jumpBoost = Date.now() + duration;
-      powerupIndicator.textContent = 'Jump Boost!';
-    }
-  }
-
-  // Update powerup timers and effects
-  function updatePowerups() {
-    const now = Date.now();
-    if (player.powerups.speedBoost && player.powerups.speedBoost < now) {
-      player.powerups.speedBoost = 0;
-      powerupIndicator.textContent = '';
-    }
-    if (player.powerups.jumpBoost && player.powerups.jumpBoost < now) {
-      player.powerups.jumpBoost = 0;
-      powerupIndicator.textContent = '';
     }
   }
 
@@ -308,6 +293,7 @@
   function nextLevel() {
     currentLevelIndex++;
     if (currentLevelIndex >= levels.length) {
+      // All levels done!
       endGame();
     } else {
       currentLevel = levels[currentLevelIndex];
@@ -320,34 +306,9 @@
     }
   }
 
-  // Update player movement and physics
-  function updatePlayer() {
-    // Powerup speed multiplier
-    let speedMult = player.powerups.speedBoost ? 1.7 : 1;
-    let jumpPower = player.powerups.jumpBoost ? 16 : player.jumpPower;
-
-    // Left/right movement
-    if (keys.left) player.vx = -player.speed * speedMult;
-    else if (keys.right) player.vx = player.speed * speedMult;
-    else player.vx *= friction;
-
-    // Jumping
-    if (keys.jump && !player.jumping) {
-      player.vy = -jumpPower;
-      player.jumping = true;
-    }
-
-    // Gravity
-    player.vy += gravity;
-
-    // Store previous position for trail when moving horizontally
-    if (player.vx !== 0) {
-      player.trail.push({x: player.x + player.w / 2, y: player.y + player.h - 10, alpha: 1});
-      if (player.trail.length > 15) player.trail.shift();
-    } else {
-      player.trail = []; // clear trail if no horizontal movement
-    }
-
-    // Update trail alpha fade
-    for (let t of player.trail) {
-      t.alpha -= 
+  // Main update loop
+  function update() {
+    // Horizontal movement
+    if (keys.left) {
+      player.vx = -player.speed;
+    } else if (keys
