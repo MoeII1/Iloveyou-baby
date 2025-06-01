@@ -42,11 +42,6 @@
     cursor: pointer;
     margin-top: 20px;
     touch-action: manipulation;
-    box-shadow: 0 4px 8px rgba(255, 105, 180, 0.6);
-    transition: background-color 0.3s ease;
-  }
-  button:hover {
-    background: #ff85c1;
   }
   button:active {
     background: #e0529d;
@@ -91,68 +86,69 @@
     margin-bottom: 20px;
   }
 
-  /* END SCREEN */
+  /* END SCREEN STYLES */
   #end-screen {
-    background: linear-gradient(135deg, #ffd6e8, #ffb6c1);
-    overflow: hidden;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #ffe6f0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    user-select: none;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.5s ease;
+    font-family: 'Comic Sans MS', cursive;
   }
-  #end-screen h1 {
+
+  #end-screen.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #end-screen h2 {
     font-size: 3rem;
-    color: #d81e5b;
-    margin-bottom: 10px;
-    animation: pulse 2s infinite ease-in-out;
-    text-shadow: 1px 1px 3px #fff;
+    color: #ff69b4;
+    animation: popIn 1s ease forwards;
+    margin-bottom: 20px;
   }
+
   #end-screen p {
     font-size: 1.8rem;
-    color: #a31e48;
-    margin-bottom: 30px;
-    animation: pulse 2s infinite ease-in-out;
-    text-shadow: 1px 1px 2px #fff;
+    color: #d81b60;
+    animation: fadeInUp 2s ease forwards;
   }
 
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-  }
-
-  /* Heart animation styles */
-  .heart {
+  /* Cute heart animations */
+  .hearts {
     position: absolute;
-    bottom: -50px;
-    width: 20px;
-    height: 18px;
-    background-color: #ff69b4;
-    transform: rotate(-45deg);
-    animation: floatUp 5s linear infinite;
+    width: 40px;
+    height: 40px;
+    background: #ff69b4;
+    clip-path: polygon(
+      50% 0%, 61% 12%, 75% 12%, 87% 24%, 87% 38%, 75% 50%, 50% 75%, 25% 50%, 13% 38%, 13% 24%, 25% 12%, 39% 12%
+    );
+    animation: floatUp 4s infinite ease-in-out;
     opacity: 0.8;
   }
-  .heart::before,
-  .heart::after {
-    content: "";
-    position: absolute;
-    width: 20px;
-    height: 18px;
-    background-color: #ff69b4;
-    border-radius: 50%;
+
+  @keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0;}
+    100% { transform: scale(1); opacity: 1;}
   }
-  .heart::before {
-    top: 0;
-    left: 10px;
+
+  @keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(20px);}
+    100% { opacity: 1; transform: translateY(0);}
   }
-  .heart::after {
-    top: -10px;
-    left: 0;
-  }
+
   @keyframes floatUp {
-    0% {
-      transform: translateY(0) rotate(-45deg);
-      opacity: 0.8;
-    }
-    100% {
-      transform: translateY(-400px) rotate(-45deg);
-      opacity: 0;
-    }
+    0% { transform: translateY(0) scale(1); opacity: 0.8;}
+    50% { opacity: 1; }
+    100% { transform: translateY(-120px) scale(1.1); opacity: 0;}
   }
 </style>
 </head>
@@ -163,18 +159,18 @@
   <button id="start-btn">Start</button>
 </div>
 
-<div id="end-screen" class="screen hidden">
-  <h1>Congratulations!</h1>
-  <p>I love you so much, my pretty princess 💖</p>
-  <button id="restart-btn">Play Again</button>
-</div>
-
 <canvas id="gameCanvas" width="800" height="400"></canvas>
 
 <!-- Touch Controls -->
 <button id="jump-btn" aria-label="Jump">⬆️</button>
 <button id="left-btn" aria-label="Left">⬅️</button>
 <button id="right-btn" aria-label="Right">➡️</button>
+
+<!-- END SCREEN -->
+<div id="end-screen" aria-live="polite" role="alert" aria-atomic="true">
+  <h2>The End 💖</h2>
+  <p>I love you so much my pretty princess</p>
+</div>
 
 <script>
   const startScreen = document.getElementById('start-screen');
@@ -185,7 +181,6 @@
   const leftBtn = document.getElementById('left-btn');
   const rightBtn = document.getElementById('right-btn');
   const endScreen = document.getElementById('end-screen');
-  const restartBtn = document.getElementById('restart-btn');
 
   const GRAVITY = 0.6;
   const GROUND_Y = 340;
@@ -208,7 +203,6 @@
 
   let scrollX = 0;
   const keys = {};
-  let gameRunning = false;
 
   const landBlocks = [];
   for (let i = 0; i < 60; i++) {
@@ -315,84 +309,79 @@
     );
   }
 
-  // Hearts animation on end screen
-  function createHeart() {
-    const heart = document.createElement('div');
-    heart.className = 'heart';
-    heart.style.left = Math.random() * window.innerWidth + 'px';
-    heart.style.animationDuration = (3 + Math.random() * 3) + 's';
-    heart.style.width = (10 + Math.random() * 20) + 'px';
-    heart.style.height = heart.style.width;
-    heart.style.backgroundColor = `hsl(${320 + Math.random() * 40}, 70%, 70%)`;
-    heart.style.opacity = 0.6 + Math.random() * 0.4;
-    endScreen.appendChild(heart);
+  // Flag to show if game ended
+  let gameEnded = false;
 
-    setTimeout(() => {
-      heart.remove();
-    }, 6000);
-  }
+  function showEndScreen() {
+    endScreen.classList.add('visible');
+    // Create floating hearts randomly
+    for (let i = 0; i < 15; i++) {
+      const heart = document.createElement('div');
+      heart.classList.add('hearts');
+      heart.style.left = Math.random() * window.innerWidth + 'px';
+      heart.style.top = window.innerHeight + 'px';
+      heart.style.animationDelay = (Math.random() * 4) + 's';
+      heart.style.animationDuration = (3 + Math.random() * 3) + 's';
+      endScreen.appendChild(heart);
 
-  let heartInterval;
-
-  function startHearts() {
-    heartInterval = setInterval(createHeart, 300);
-  }
-  function stopHearts() {
-    clearInterval(heartInterval);
-    const hearts = endScreen.querySelectorAll('.heart');
-    hearts.forEach(h => h.remove());
+      // Remove heart after animation so DOM doesn't overflow
+      heart.addEventListener('animationend', () => {
+        heart.remove();
+      });
+    }
   }
 
   function gameLoop() {
-    if (!gameRunning) return;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (keys.ArrowRight) {
-      if (player.x < SCROLL_BOUNDARY_RIGHT) {
-        player.x += player.speed;
-      } else if (scrollX < MAP_WIDTH - canvas.width) {
-        scrollX += player.speed;
-      } else {
-        player.x += player.speed;
+    if (!gameEnded) {
+      if (keys.ArrowRight) {
+        if (player.x < SCROLL_BOUNDARY_RIGHT) {
+          player.x += player.speed;
+        } else if (scrollX < MAP_WIDTH - canvas.width) {
+          scrollX += player.speed;
+        } else {
+          player.x += player.speed;
+        }
       }
-    }
 
-    if (keys.ArrowLeft) {
-      if (player.x > SCROLL_BOUNDARY_LEFT) {
-        player.x -= player.speed;
-      } else if (scrollX > 0) {
-        scrollX -= player.speed;
-      } else {
-        player.x -= player.speed;
+      if (keys.ArrowLeft) {
+        if (player.x > SCROLL_BOUNDARY_LEFT) {
+          player.x -= player.speed;
+        } else if (scrollX > 0) {
+          scrollX -= player.speed;
+        } else {
+          player.x -= player.speed;
+        }
       }
+
+      applyGravity();
+
+      if (checkObstacleCollision()) {
+        alert('Ouch! You hit an obstacle! Restarting...');
+        startGame();
+        return;
+      }
+
+      // Check if player finished the level by moving off the right end
+      if (player.x - scrollX > MAP_WIDTH) {
+        gameEnded = true;
+        showEndScreen();
+      }
+
+      drawLand();
+      drawObstacles();
+      drawPlayer();
+
+      requestAnimationFrame(gameLoop);
     }
-
-    applyGravity();
-
-    if (checkObstacleCollision()) {
-      alert('Ouch! You hit an obstacle! Restarting...');
-      startGame();
-      return;
-    }
-
-    // Win condition: passed last obstacle
-    const lastObstacle = obstacles[obstacles.length - 1];
-    if (player.x > lastObstacle.x + lastObstacle.width) {
-      endGame();
-      return;
-    }
-
-    drawLand();
-    drawObstacles();
-    drawPlayer();
-
-    requestAnimationFrame(gameLoop);
   }
 
   function startGame() {
+    endScreen.classList.remove('visible');
+    endScreen.innerHTML = `<h2>The End 💖</h2><p>I love you so much my pretty princess</p>`;
+    gameEnded = false;
     startScreen.classList.add('hidden');
-    endScreen.classList.add('hidden');
     player.x = 50;
     player.y = GROUND_Y;
     player.vy = 0;
@@ -400,19 +389,10 @@
     scrollX = 0;
     keys.ArrowLeft = false;
     keys.ArrowRight = false;
-    gameRunning = true;
-    stopHearts();
     gameLoop();
   }
 
-  function endGame() {
-    gameRunning = false;
-    endScreen.classList.remove('hidden');
-    startHearts();
-  }
-
   startBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', startGame);
 
   // Keyboard controls for desktop
   window.addEventListener('keydown', e => {
@@ -438,3 +418,33 @@
   // Touch buttons jump
   jumpBtn.addEventListener('touchstart', e => {
     e.preventDefault();
+    tryJump();
+  });
+
+  // Touch move buttons
+  leftBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowLeft = true; });
+  rightBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowRight = true; });
+  leftBtn.addEventListener('touchend', () => keys.ArrowLeft = false);
+  rightBtn.addEventListener('touchend', () => keys.ArrowRight = false);
+
+  // Also support mouse for desktop fallback
+  leftBtn.addEventListener('mousedown', () => keys.ArrowLeft = true);
+  rightBtn.addEventListener('mousedown', () => keys.ArrowRight = true);
+  leftBtn.addEventListener('mouseup', () => keys.ArrowLeft = false);
+  rightBtn.addEventListener('mouseup', () => keys.ArrowRight = false);
+
+  // Resize canvas to fit mobile viewport width dynamically
+  function resizeCanvas() {
+    const w = window.innerWidth;
+    const h = Math.min(window.innerHeight * 0.5, 400); // max 400 height
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+</script>
+
+</body>
+</html>
