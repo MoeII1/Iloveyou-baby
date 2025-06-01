@@ -1,125 +1,345 @@
-<!DOCTYPE html>
+You're the best thing thats ever happened to me my love 
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Princess Warrior Quest</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: #fce4ec; }
-    canvas { display: block; margin: auto; background: linear-gradient(to top, #ffe0f0, #ffccdd); }
-    .controls {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 20px; z-index: 100;
-    }
-    button {
-      width: 60px; height: 60px;
-      background: #ff99bb;
-      border: none; border-radius: 50%;
-      font-size: 24px; color: white;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Princess Warrior Quest</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: linear-gradient(to top, #e0f7fa, #b2ebf2);
+    font-family: 'Comic Sans MS', cursive;
+    overflow: hidden; /* Keep fullscreen experience */
+  }
+  canvas {
+    display: block;
+    background: #fff0f5;
+    margin: 0 auto;
+    touch-action: none; /* Prevent default gestures on canvas */
+  }
+  .screen {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(255,255,255,0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    user-select: none;
+    padding: 0 20px;
+    text-align: center;
+  }
+  .hidden { display: none; }
+  button {
+    background: #ff69b4;
+    border: none;
+    color: white;
+    font-size: 1.6rem;
+    padding: 1.2rem 2.5rem;
+    border-radius: 14px;
+    cursor: pointer;
+    margin-top: 20px;
+    touch-action: manipulation;
+  }
+  button:active {
+    background: #e0529d;
+  }
+  /* Bigger and spaced touch buttons */
+  #jump-btn, #left-btn, #right-btn {
+    position: fixed;
+    bottom: 25px;
+    background: #ff69b4;
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    font-size: 2rem;
+    user-select: none;
+    cursor: pointer;
+    border: none;
+    color: white;
+    z-index: 50;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #jump-btn:active, #left-btn:active, #right-btn:active {
+    background: #e0529d;
+  }
+  #jump-btn { right: 20px; }
+  #right-btn { left: 110px; }
+  #left-btn { left: 20px; }
+
+  /* Responsive canvas container */
+  #gameCanvas {
+    width: 100vw;
+    height: 50vh;
+    max-height: 400px;
+    max-width: 800px;
+  }
+
+  /* Title scaling for smaller screens */
+  #start-screen h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+  }
+</style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="800" height="450"></canvas>
-  <div class="controls">
-    <button id="left">⯇</button>
-    <button id="jump">⭡</button>
-    <button id="right">⯈</button>
-  </div>
-  <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
 
-    const princess = {
-      x: 100, y: 300, width: 40, height: 60,
-      color: '#ff69b4',
-      vx: 0, vy: 0,
-      speed: 3, jumpStrength: -10,
-      onGround: false
-    };
+<div id="start-screen" class="screen">
+  <h1>Princess Warrior Quest</h1>
+  <button id="start-btn">Start</button>
+</div>
 
-    const keys = { left: false, right: false, jump: false };
+<canvas id="gameCanvas" width="800" height="400"></canvas>
 
-    const gravity = 0.5;
-    const platforms = [
-      { x: 0, y: 400, width: 1200, height: 50 },
-      { x: 300, y: 330, width: 120, height: 20 },
-      { x: 500, y: 270, width: 100, height: 20 },
-    ];
+<!-- Touch Controls -->
+<button id="jump-btn" aria-label="Jump">⬆️</button>
+<button id="left-btn" aria-label="Left">⬅️</button>
+<button id="right-btn" aria-label="Right">➡️</button>
 
-    function drawPrincess() {
-      ctx.fillStyle = princess.color;
-      ctx.fillRect(princess.x, princess.y, princess.width, princess.height);
+<script>
+  const startScreen = document.getElementById('start-screen');
+  const startBtn = document.getElementById('start-btn');
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const jumpBtn = document.getElementById('jump-btn');
+  const leftBtn = document.getElementById('left-btn');
+  const rightBtn = document.getElementById('right-btn');
+
+  const GRAVITY = 0.6;
+  const GROUND_Y = 340;
+  const SCROLL_BOUNDARY_LEFT = 200;
+  const SCROLL_BOUNDARY_RIGHT = 600;
+  const MAP_WIDTH = 3000;
+
+  const player = {
+    x: 50,
+    y: GROUND_Y,
+    width: 40,
+    height: 50,
+    vy: 0,
+    speed: 5,
+    jumping: false,
+    frame: 0,
+    frameTick: 0,
+    frameMaxTick: 5,
+  };
+
+  let scrollX = 0;
+  const keys = {};
+
+  const landBlocks = [];
+  for (let i = 0; i < 60; i++) {
+    if (i % 10 === 0) {
+      landBlocks.push({x: i * 50, y: GROUND_Y + 20, width: 50, height: 80});
+    } else {
+      landBlocks.push({x: i * 50, y: GROUND_Y + 40, width: 50, height: 60});
     }
+  }
 
-    function drawPlatforms() {
-      ctx.fillStyle = '#ffb6c1';
-      platforms.forEach(p => {
-        ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
-      });
-    }
+  const obstacles = [
+    {x: 400, y: GROUND_Y + 10, width: 30, height: 30},
+    {x: 800, y: GROUND_Y + 10, width: 30, height: 30},
+    {x: 1200, y: GROUND_Y + 10, width: 30, height: 30},
+    {x: 1600, y: GROUND_Y + 10, width: 30, height: 30},
+    {x: 2000, y: GROUND_Y + 10, width: 30, height: 30},
+  ];
 
-    let cameraX = 0;
+  const playerColors = ['#ffc0cb', '#ffb6c1', '#ff69b4', '#ff1493'];
 
-    function update() {
-      // Movement
-      if (keys.left) princess.vx = -princess.speed;
-      else if (keys.right) princess.vx = princess.speed;
-      else princess.vx = 0;
-
-      // Jump
-      if (keys.jump && princess.onGround) {
-        princess.vy = princess.jumpStrength;
-        princess.onGround = false;
+  function drawPlayer() {
+    if (keys.ArrowLeft || keys.ArrowRight) {
+      player.frameTick++;
+      if (player.frameTick >= player.frameMaxTick) {
+        player.frameTick = 0;
+        player.frame = (player.frame + 1) % playerColors.length;
       }
+    } else {
+      player.frame = 0;
+    }
+    ctx.fillStyle = playerColors[player.frame];
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.arc(player.x + 10, player.y + 15, 5, 0, Math.PI * 2);
+    ctx.arc(player.x + 30, player.y + 15, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-      // Apply gravity
-      princess.vy += gravity;
-      princess.x += princess.vx;
-      princess.y += princess.vy;
+  function drawLand() {
+    ctx.fillStyle = '#8B4513';
+    landBlocks.forEach(block => {
+      ctx.fillRect(block.x - scrollX, block.y, block.width, block.height);
+    });
+  }
 
-      // Collision
-      princess.onGround = false;
-      platforms.forEach(p => {
-        if (
-          princess.x + princess.width > p.x && princess.x < p.x + p.width &&
-          princess.y + princess.height > p.y && princess.y + princess.height < p.y + p.height &&
-          princess.vy >= 0
-        ) {
-          princess.y = p.y - princess.height;
-          princess.vy = 0;
-          princess.onGround = true;
-        }
-      });
+  function drawObstacles() {
+    ctx.fillStyle = '#c0392b';
+    obstacles.forEach(obs => {
+      ctx.fillRect(obs.x - scrollX, obs.y, obs.width, obs.height);
+      ctx.fillStyle = '#e74c3c';
+      ctx.beginPath();
+      ctx.moveTo(obs.x - scrollX, obs.y + obs.height);
+      ctx.lineTo(obs.x - scrollX + obs.width / 2, obs.y);
+      ctx.lineTo(obs.x - scrollX + obs.width, obs.y + obs.height);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#c0392b';
+    });
+  }
 
-      // Camera follows princess
-      cameraX = princess.x - 100;
+  function applyGravity() {
+    player.vy += GRAVITY;
+    player.y += player.vy;
+
+    let onLand = false;
+
+    if (player.y > GROUND_Y) {
+      player.y = GROUND_Y;
+      player.vy = 0;
+      player.jumping = false;
+      onLand = true;
     }
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawPlatforms();
-      ctx.fillStyle = princess.color;
-      ctx.fillRect(princess.x - cameraX, princess.y, princess.width, princess.height);
+    landBlocks.forEach(block => {
+      const px = player.x;
+      const py = player.y + player.height;
+      const bx = block.x - scrollX;
+      const by = block.y;
+
+      if (
+        px + player.width > bx &&
+        px < bx + block.width &&
+        py >= by &&
+        py <= by + block.height &&
+        player.vy >= 0
+      ) {
+        player.y = by - player.height;
+        player.vy = 0;
+        player.jumping = false;
+        onLand = true;
+      }
+    });
+
+    return onLand;
+  }
+
+  function checkObstacleCollision() {
+    return obstacles.some(obs =>
+      player.x < obs.x - scrollX + obs.width &&
+      player.x + player.width > obs.x - scrollX &&
+      player.y < obs.y + obs.height &&
+      player.y + player.height > obs.y
+    );
+  }
+
+  function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (keys.ArrowRight) {
+      if (player.x < SCROLL_BOUNDARY_RIGHT) {
+        player.x += player.speed;
+      } else if (scrollX < MAP_WIDTH - canvas.width) {
+        scrollX += player.speed;
+      } else {
+        player.x += player.speed;
+      }
     }
 
-    function gameLoop() {
-      update();
-      draw();
-      requestAnimationFrame(gameLoop);
+    if (keys.ArrowLeft) {
+      if (player.x > SCROLL_BOUNDARY_LEFT) {
+        player.x -= player.speed;
+      } else if (scrollX > 0) {
+        scrollX -= player.speed;
+      } else {
+        player.x -= player.speed;
+      }
     }
 
-    // Touch Controls
-    document.getElementById('left').addEventListener('touchstart', () => keys.left = true);
-    document.getElementById('left').addEventListener('touchend', () => keys.left = false);
-    document.getElementById('right').addEventListener('touchstart', () => keys.right = true);
-    document.getElementById('right').addEventListener('touchend', () => keys.right = false);
-    document.getElementById('jump').addEventListener('touchstart', () => keys.jump = true);
-    document.getElementById('jump').addEventListener('touchend', () => keys.jump = false);
+    applyGravity();
 
+    if (checkObstacleCollision()) {
+      alert('Ouch! You hit an obstacle! Restarting...');
+      startGame();
+      return;
+    }
+
+    drawLand();
+    drawObstacles();
+    drawPlayer();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  function startGame() {
+    startScreen.classList.add('hidden');
+    player.x = 50;
+    player.y = GROUND_Y;
+    player.vy = 0;
+    player.jumping = false;
+    scrollX = 0;
+    keys.ArrowLeft = false;
+    keys.ArrowRight = false;
     gameLoop();
-  </script>
+  }
+
+  startBtn.addEventListener('click', startGame);
+
+  // Keyboard controls for desktop
+  window.addEventListener('keydown', e => {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key)) e.preventDefault();
+    keys[e.key] = true;
+  });
+
+  window.addEventListener('keyup', e => {
+    keys[e.key] = false;
+  });
+
+  function tryJump() {
+    if (!player.jumping) {
+      player.vy = -12;
+      player.jumping = true;
+    }
+  }
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp' || e.key === ' ') tryJump();
+  });
+
+  // Touch buttons jump
+  jumpBtn.addEventListener('touchstart', e => {
+    e.preventDefault();
+    tryJump();
+  });
+
+  // Touch move buttons
+  leftBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowLeft = true; });
+  rightBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowRight = true; });
+  leftBtn.addEventListener('touchend', () => keys.ArrowLeft = false);
+  rightBtn.addEventListener('touchend', () => keys.ArrowRight = false);
+
+  // Also support mouse for desktop fallback
+  leftBtn.addEventListener('mousedown', () => keys.ArrowLeft = true);
+  rightBtn.addEventListener('mousedown', () => keys.ArrowRight = true);
+  leftBtn.addEventListener('mouseup', () => keys.ArrowLeft = false);
+  rightBtn.addEventListener('mouseup', () => keys.ArrowRight = false);
+
+  // Resize canvas to fit mobile viewport width dynamically
+  function resizeCanvas() {
+    const w = window.innerWidth;
+    const h = Math.min(window.innerHeight * 0.5, 400); // max 400 height
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+</script>
+
 </body>
 </html>
