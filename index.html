@@ -42,6 +42,11 @@
     cursor: pointer;
     margin-top: 20px;
     touch-action: manipulation;
+    box-shadow: 0 4px 8px rgba(255, 105, 180, 0.6);
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background: #ff85c1;
   }
   button:active {
     background: #e0529d;
@@ -85,6 +90,70 @@
     font-size: 2.5rem;
     margin-bottom: 20px;
   }
+
+  /* END SCREEN */
+  #end-screen {
+    background: linear-gradient(135deg, #ffd6e8, #ffb6c1);
+    overflow: hidden;
+  }
+  #end-screen h1 {
+    font-size: 3rem;
+    color: #d81e5b;
+    margin-bottom: 10px;
+    animation: pulse 2s infinite ease-in-out;
+    text-shadow: 1px 1px 3px #fff;
+  }
+  #end-screen p {
+    font-size: 1.8rem;
+    color: #a31e48;
+    margin-bottom: 30px;
+    animation: pulse 2s infinite ease-in-out;
+    text-shadow: 1px 1px 2px #fff;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  /* Heart animation styles */
+  .heart {
+    position: absolute;
+    bottom: -50px;
+    width: 20px;
+    height: 18px;
+    background-color: #ff69b4;
+    transform: rotate(-45deg);
+    animation: floatUp 5s linear infinite;
+    opacity: 0.8;
+  }
+  .heart::before,
+  .heart::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 18px;
+    background-color: #ff69b4;
+    border-radius: 50%;
+  }
+  .heart::before {
+    top: 0;
+    left: 10px;
+  }
+  .heart::after {
+    top: -10px;
+    left: 0;
+  }
+  @keyframes floatUp {
+    0% {
+      transform: translateY(0) rotate(-45deg);
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(-400px) rotate(-45deg);
+      opacity: 0;
+    }
+  }
 </style>
 </head>
 <body>
@@ -92,6 +161,12 @@
 <div id="start-screen" class="screen">
   <h1>Princess Warrior Quest</h1>
   <button id="start-btn">Start</button>
+</div>
+
+<div id="end-screen" class="screen hidden">
+  <h1>Congratulations!</h1>
+  <p>I love you so much, my pretty princess 💖</p>
+  <button id="restart-btn">Play Again</button>
 </div>
 
 <canvas id="gameCanvas" width="800" height="400"></canvas>
@@ -109,6 +184,8 @@
   const jumpBtn = document.getElementById('jump-btn');
   const leftBtn = document.getElementById('left-btn');
   const rightBtn = document.getElementById('right-btn');
+  const endScreen = document.getElementById('end-screen');
+  const restartBtn = document.getElementById('restart-btn');
 
   const GRAVITY = 0.6;
   const GROUND_Y = 340;
@@ -131,6 +208,7 @@
 
   let scrollX = 0;
   const keys = {};
+  let gameRunning = false;
 
   const landBlocks = [];
   for (let i = 0; i < 60; i++) {
@@ -237,7 +315,37 @@
     );
   }
 
+  // Hearts animation on end screen
+  function createHeart() {
+    const heart = document.createElement('div');
+    heart.className = 'heart';
+    heart.style.left = Math.random() * window.innerWidth + 'px';
+    heart.style.animationDuration = (3 + Math.random() * 3) + 's';
+    heart.style.width = (10 + Math.random() * 20) + 'px';
+    heart.style.height = heart.style.width;
+    heart.style.backgroundColor = `hsl(${320 + Math.random() * 40}, 70%, 70%)`;
+    heart.style.opacity = 0.6 + Math.random() * 0.4;
+    endScreen.appendChild(heart);
+
+    setTimeout(() => {
+      heart.remove();
+    }, 6000);
+  }
+
+  let heartInterval;
+
+  function startHearts() {
+    heartInterval = setInterval(createHeart, 300);
+  }
+  function stopHearts() {
+    clearInterval(heartInterval);
+    const hearts = endScreen.querySelectorAll('.heart');
+    hearts.forEach(h => h.remove());
+  }
+
   function gameLoop() {
+    if (!gameRunning) return;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (keys.ArrowRight) {
@@ -268,6 +376,13 @@
       return;
     }
 
+    // Win condition: passed last obstacle
+    const lastObstacle = obstacles[obstacles.length - 1];
+    if (player.x > lastObstacle.x + lastObstacle.width) {
+      endGame();
+      return;
+    }
+
     drawLand();
     drawObstacles();
     drawPlayer();
@@ -277,6 +392,7 @@
 
   function startGame() {
     startScreen.classList.add('hidden');
+    endScreen.classList.add('hidden');
     player.x = 50;
     player.y = GROUND_Y;
     player.vy = 0;
@@ -284,10 +400,19 @@
     scrollX = 0;
     keys.ArrowLeft = false;
     keys.ArrowRight = false;
+    gameRunning = true;
+    stopHearts();
     gameLoop();
   }
 
+  function endGame() {
+    gameRunning = false;
+    endScreen.classList.remove('hidden');
+    startHearts();
+  }
+
   startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
 
   // Keyboard controls for desktop
   window.addEventListener('keydown', e => {
@@ -313,33 +438,3 @@
   // Touch buttons jump
   jumpBtn.addEventListener('touchstart', e => {
     e.preventDefault();
-    tryJump();
-  });
-
-  // Touch move buttons
-  leftBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowLeft = true; });
-  rightBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowRight = true; });
-  leftBtn.addEventListener('touchend', () => keys.ArrowLeft = false);
-  rightBtn.addEventListener('touchend', () => keys.ArrowRight = false);
-
-  // Also support mouse for desktop fallback
-  leftBtn.addEventListener('mousedown', () => keys.ArrowLeft = true);
-  rightBtn.addEventListener('mousedown', () => keys.ArrowRight = true);
-  leftBtn.addEventListener('mouseup', () => keys.ArrowLeft = false);
-  rightBtn.addEventListener('mouseup', () => keys.ArrowRight = false);
-
-  // Resize canvas to fit mobile viewport width dynamically
-  function resizeCanvas() {
-    const w = window.innerWidth;
-    const h = Math.min(window.innerHeight * 0.5, 400); // max 400 height
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-  }
-
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
-
-</script>
-
-</body>
-</html>
