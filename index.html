@@ -6,8 +6,8 @@
   <title>Princess Warrior Quest</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: #fce4ec; }
-    canvas { display: block; margin: auto; background: linear-gradient(to top, #ffe0f0, #ffccdd); }
+    html, body { height: 100%; overflow: hidden; background: #87CEEB; }
+    canvas { display: block; margin: auto; background: linear-gradient(to top, #87CEEB, #ffffff); }
     .controls {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
       display: flex; gap: 20px; z-index: 100;
@@ -42,6 +42,10 @@
 
     const keys = { left: false, right: false, jump: false };
     const gravity = 0.5;
+    let messageOpacity = 0;
+    let sparkleParticles = [];
+    let coinMessage = '';
+    let coinMessageTimer = 0;
 
     const platforms = [
       { x: 0, y: 400, width: 1200, height: 50 },
@@ -59,15 +63,25 @@
     ];
 
     const flag = { x: 1100, y: 350, width: 20, height: 50, reached: false };
-    let messageOpacity = 0;
 
     function drawPrincess() {
       ctx.fillStyle = princess.color;
       ctx.fillRect(princess.x - cameraX, princess.y, princess.width, princess.height);
+      // Draw eyes
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(princess.x - cameraX + 10, princess.y + 20, 5, 0, Math.PI * 2);
+      ctx.arc(princess.x - cameraX + 30, princess.y + 20, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(princess.x - cameraX + 10, princess.y + 20, 2, 0, Math.PI * 2);
+      ctx.arc(princess.x - cameraX + 30, princess.y + 20, 2, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     function drawPlatforms() {
-      ctx.fillStyle = '#ffb6c1';
+      ctx.fillStyle = '#228B22';
       platforms.forEach(p => {
         ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
       });
@@ -97,18 +111,33 @@
     }
 
     function showMessage() {
-      if (messageOpacity < 1) {
-        messageOpacity += 0.01;
-      }
-
+      if (messageOpacity < 1) messageOpacity += 0.01;
       ctx.globalAlpha = messageOpacity;
-      ctx.fillStyle = '#ffffffee';
-      ctx.fillRect(100, 100, 600, 200);
-      ctx.fillStyle = '#ff1493';
-      ctx.font = '30px Comic Sans MS';
+      for (let i = 0; i < 100; i++) {
+        ctx.fillStyle = `hsla(${Math.random()*360},100%,75%,0.6)`;
+        ctx.beginPath();
+        ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, 2, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#ff69b4';
+      ctx.font = '24px Comic Sans MS';
       ctx.textAlign = 'center';
-      ctx.fillText('I love you my pretty princess', 400, 200);
+      ctx.fillText('I love you baby', 400, 230);
       ctx.globalAlpha = 1;
+    }
+
+    function drawMagicTrail() {
+      sparkleParticles.push({ x: princess.x, y: princess.y + princess.height / 2, alpha: 1 });
+      sparkleParticles.forEach(p => {
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = 'pink';
+        ctx.beginPath();
+        ctx.arc(p.x - cameraX, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        p.alpha -= 0.02;
+      });
+      sparkleParticles = sparkleParticles.filter(p => p.alpha > 0);
     }
 
     let cameraX = 0;
@@ -146,6 +175,8 @@
               princess.x < c.x + 10 && princess.x + princess.width > c.x - 10 &&
               princess.y < c.y + 10 && princess.y + princess.height > c.y - 10) {
             c.collected = true;
+            coinMessage = "Yay! Coin! ✨";
+            coinMessageTimer = 60;
           }
         });
 
@@ -170,6 +201,8 @@
 
         cameraX = princess.x - 100;
       }
+
+      if (coinMessageTimer > 0) coinMessageTimer--;
     }
 
     function draw() {
@@ -178,10 +211,16 @@
       drawCoins();
       drawEnemies();
       drawFlag();
+      drawMagicTrail();
       drawPrincess();
 
-      if (flag.reached) {
-        showMessage();
+      if (flag.reached) showMessage();
+
+      if (coinMessageTimer > 0) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '20px Comic Sans MS';
+        ctx.textAlign = 'center';
+        ctx.fillText(coinMessage, princess.x - cameraX + 20, princess.y - 10);
       }
     }
 
