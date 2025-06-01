@@ -127,18 +127,6 @@
     {x: 2000, y: GROUND_Y + 10, width: 30, height: 30},
   ];
 
-  const enemies = [
-    { x: 600, y: GROUND_Y + 10, width: 30, height: 40, dir: 1 },
-    { x: 1400, y: GROUND_Y + 10, width: 30, height: 40, dir: -1 },
-  ];
-
-  const powerUps = [
-    { x: 700, y: GROUND_Y - 20, width: 20, height: 20, collected: false },
-    { x: 1800, y: GROUND_Y - 20, width: 20, height: 20, collected: false },
-  ];
-
-  const goal = { x: 2900, y: GROUND_Y - 40, width: 40, height: 60 };
-
   const playerColors = ['#ffc0cb', '#ffb6c1', '#ff69b4', '#ff1493'];
 
   function drawPlayer() {
@@ -180,75 +168,6 @@
       ctx.fill();
       ctx.fillStyle = '#c0392b';
     });
-  }
-
-  function drawEnemies() {
-    ctx.fillStyle = 'purple';
-    enemies.forEach(enemy => {
-      ctx.fillRect(enemy.x - scrollX, enemy.y, enemy.width, enemy.height);
-    });
-  }
-
-  function updateEnemies() {
-    enemies.forEach(enemy => {
-      enemy.x += enemy.dir * 2;
-      if (enemy.x < 550 || enemy.x > 1650) {
-        enemy.dir *= -1;
-      }
-    });
-  }
-
-  function checkEnemyCollision() {
-    return enemies.some(enemy =>
-      player.x < enemy.x - scrollX + enemy.width &&
-      player.x + player.width > enemy.x - scrollX &&
-      player.y < enemy.y + enemy.height &&
-      player.y + player.height > enemy.y
-    );
-  }
-
-  function drawPowerUps() {
-    ctx.fillStyle = 'gold';
-    powerUps.forEach(p => {
-      if (!p.collected) {
-        ctx.beginPath();
-        ctx.arc(p.x - scrollX + p.width/2, p.y + p.height/2, p.width/2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-  }
-
-  function checkPowerUpCollection() {
-    powerUps.forEach(p => {
-      if (
-        !p.collected &&
-        player.x < p.x - scrollX + p.width &&
-        player.x + player.width > p.x - scrollX &&
-        player.y < p.y + p.height &&
-        player.y + player.height > p.y
-      ) {
-        p.collected = true;
-      }
-    });
-  }
-
-  function drawGoal() {
-    ctx.fillStyle = 'limegreen';
-    ctx.fillRect(goal.x - scrollX, goal.y, goal.width, goal.height);
-    ctx.fillStyle = 'white';
-    ctx.fillText('🏁', goal.x - scrollX + 5, goal.y + 50);
-  }
-
-  function checkGoalReached() {
-    if (
-      player.x < goal.x - scrollX + goal.width &&
-      player.x + player.width > goal.x - scrollX &&
-      player.y < goal.y + goal.height &&
-      player.y + player.height > goal.y
-    ) {
-      alert('🎉 You completed the level!');
-      startGame();
-    }
   }
 
   function applyGravity() {
@@ -321,21 +240,14 @@
 
     applyGravity();
 
-    if (checkObstacleCollision() || checkEnemyCollision()) {
-      alert('💥 You lost! Try again.');
+    if (checkObstacleCollision()) {
+      alert('Ouch! You hit an obstacle! Restarting...');
       startGame();
       return;
     }
 
-    checkPowerUpCollection();
-    checkGoalReached();
-    updateEnemies();
-
     drawLand();
     drawObstacles();
-    drawPowerUps();
-    drawEnemies();
-    drawGoal();
     drawPlayer();
 
     requestAnimationFrame(gameLoop);
@@ -348,7 +260,6 @@
     player.vy = 0;
     player.jumping = false;
     scrollX = 0;
-    powerUps.forEach(p => p.collected = false);
     keys.ArrowLeft = false;
     keys.ArrowRight = false;
     gameLoop();
@@ -382,6 +293,7 @@
     tryJump();
   });
 
+  // Touch move buttons
   leftBtn.addEventListener('mousedown', () => keys.ArrowLeft = true);
   rightBtn.addEventListener('mousedown', () => keys.ArrowRight = true);
   leftBtn.addEventListener('mouseup', () => keys.ArrowLeft = false);
