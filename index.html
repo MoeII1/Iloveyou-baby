@@ -67,7 +67,6 @@
     function drawPrincess() {
       ctx.fillStyle = princess.color;
       ctx.fillRect(princess.x - cameraX, princess.y, princess.width, princess.height);
-      // Draw eyes
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.arc(princess.x - cameraX + 10, princess.y + 20, 5, 0, Math.PI * 2);
@@ -122,7 +121,7 @@
       ctx.fillStyle = '#ff69b4';
       ctx.font = '24px Comic Sans MS';
       ctx.textAlign = 'center';
-      ctx.fillText('I love you baby', 400, 230);
+      ctx.fillText('I love you my pretty princess', 400, 230);
       ctx.globalAlpha = 1;
     }
 
