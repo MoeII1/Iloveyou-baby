@@ -188,6 +188,7 @@
           ) {
             princess.x = 100;
             princess.y = 300;
+            cameraX = 0;
           }
         });
 
@@ -235,6 +236,13 @@
     document.getElementById('right').addEventListener('touchend', () => keys.right = false);
     document.getElementById('jump').addEventListener('touchstart', () => keys.jump = true);
     document.getElementById('jump').addEventListener('touchend', () => keys.jump = false);
+
+    document.getElementById('left').addEventListener('mousedown', () => keys.left = true);
+    document.getElementById('left').addEventListener('mouseup', () => keys.left = false);
+    document.getElementById('right').addEventListener('mousedown', () => keys.right = true);
+    document.getElementById('right').addEventListener('mouseup', () => keys.right = false);
+    document.getElementById('jump').addEventListener('mousedown', () => keys.jump = true);
+    document.getElementById('jump').addEventListener('mouseup', () => keys.jump = false);
 
     gameLoop();
   </script>
