@@ -1,22 +1,23 @@
-
+theres till not an ending.. in the end after the character finishes all the obstacles and goes out of the screen i want you to add  the end lovely and cute with animations and ideas and make it say i love you so much my pretty princess and add all of that to this code 
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Princess Warrior Quest</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body, html {
+  html, body {
     height: 100%;
     background: linear-gradient(to top, #e0f7fa, #b2ebf2);
     font-family: 'Comic Sans MS', cursive;
-    overflow: hidden;
+    overflow: hidden; /* Keep fullscreen experience */
   }
   canvas {
     display: block;
     background: #fff0f5;
     margin: 0 auto;
+    touch-action: none; /* Prevent default gestures on canvas */
   }
   .screen {
     position: fixed;
@@ -28,41 +29,63 @@
     align-items: center;
     z-index: 100;
     user-select: none;
+    padding: 0 20px;
+    text-align: center;
   }
   .hidden { display: none; }
   button {
     background: #ff69b4;
     border: none;
     color: white;
-    font-size: 1.4rem;
-    padding: 1rem 2rem;
-    border-radius: 12px;
+    font-size: 1.6rem;
+    padding: 1.2rem 2.5rem;
+    border-radius: 14px;
     cursor: pointer;
     margin-top: 20px;
+    touch-action: manipulation;
   }
   button:active {
     background: #e0529d;
   }
+  /* Bigger and spaced touch buttons */
   #jump-btn, #left-btn, #right-btn {
     position: fixed;
-    bottom: 20px;
+    bottom: 25px;
     background: #ff69b4;
     border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    font-size: 1.8rem;
+    width: 70px;
+    height: 70px;
+    font-size: 2rem;
     user-select: none;
     cursor: pointer;
     border: none;
     color: white;
     z-index: 50;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   #jump-btn:active, #left-btn:active, #right-btn:active {
     background: #e0529d;
   }
   #jump-btn { right: 20px; }
-  #right-btn { left: 100px; }
+  #right-btn { left: 110px; }
   #left-btn { left: 20px; }
+
+  /* Responsive canvas container */
+  #gameCanvas {
+    width: 100vw;
+    height: 50vh;
+    max-height: 400px;
+    max-width: 800px;
+  }
+
+  /* Title scaling for smaller screens */
+  #start-screen h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+  }
 </style>
 </head>
 <body>
@@ -267,6 +290,7 @@
 
   startBtn.addEventListener('click', startGame);
 
+  // Keyboard controls for desktop
   window.addEventListener('keydown', e => {
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key)) e.preventDefault();
     keys[e.key] = true;
@@ -287,21 +311,35 @@
     if (e.key === 'ArrowUp' || e.key === ' ') tryJump();
   });
 
-  jumpBtn.addEventListener('mousedown', tryJump);
+  // Touch buttons jump
   jumpBtn.addEventListener('touchstart', e => {
     e.preventDefault();
     tryJump();
   });
 
   // Touch move buttons
-  leftBtn.addEventListener('mousedown', () => keys.ArrowLeft = true);
-  rightBtn.addEventListener('mousedown', () => keys.ArrowRight = true);
-  leftBtn.addEventListener('mouseup', () => keys.ArrowLeft = false);
-  rightBtn.addEventListener('mouseup', () => keys.ArrowRight = false);
   leftBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowLeft = true; });
   rightBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowRight = true; });
   leftBtn.addEventListener('touchend', () => keys.ArrowLeft = false);
   rightBtn.addEventListener('touchend', () => keys.ArrowRight = false);
+
+  // Also support mouse for desktop fallback
+  leftBtn.addEventListener('mousedown', () => keys.ArrowLeft = true);
+  rightBtn.addEventListener('mousedown', () => keys.ArrowRight = true);
+  leftBtn.addEventListener('mouseup', () => keys.ArrowLeft = false);
+  rightBtn.addEventListener('mouseup', () => keys.ArrowRight = false);
+
+  // Resize canvas to fit mobile viewport width dynamically
+  function resizeCanvas() {
+    const w = window.innerWidth;
+    const h = Math.min(window.innerHeight * 0.5, 400); // max 400 height
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
 </script>
 
 </body>
