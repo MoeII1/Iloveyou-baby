@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -126,8 +127,6 @@
     {x: 2000, y: GROUND_Y + 10, width: 30, height: 30},
   ];
 
-  const playerColors = ['#ffc0cb', '#ffb6c1', '#ff69b4', '#ff1493'];
-
   const enemies = [
     { x: 600, y: GROUND_Y + 10, width: 30, height: 40, dir: 1 },
     { x: 1400, y: GROUND_Y + 10, width: 30, height: 40, dir: -1 },
@@ -139,6 +138,8 @@
   ];
 
   const goal = { x: 2900, y: GROUND_Y - 40, width: 40, height: 60 };
+
+  const playerColors = ['#ffc0cb', '#ffb6c1', '#ff69b4', '#ff1493'];
 
   function drawPlayer() {
     if (keys.ArrowLeft || keys.ArrowRight) {
@@ -197,12 +198,21 @@
     });
   }
 
+  function checkEnemyCollision() {
+    return enemies.some(enemy =>
+      player.x < enemy.x - scrollX + enemy.width &&
+      player.x + player.width > enemy.x - scrollX &&
+      player.y < enemy.y + enemy.height &&
+      player.y + player.height > enemy.y
+    );
+  }
+
   function drawPowerUps() {
     ctx.fillStyle = 'gold';
     powerUps.forEach(p => {
       if (!p.collected) {
         ctx.beginPath();
-        ctx.arc(p.x - scrollX + p.width / 2, p.y + p.height / 2, p.width / 2, 0, Math.PI * 2);
+        ctx.arc(p.x - scrollX + p.width/2, p.y + p.height/2, p.width/2, 0, Math.PI * 2);
         ctx.fill();
       }
     });
@@ -210,11 +220,13 @@
 
   function checkPowerUpCollection() {
     powerUps.forEach(p => {
-      if (!p.collected &&
-          player.x < p.x - scrollX + p.width &&
-          player.x + player.width > p.x - scrollX &&
-          player.y < p.y + p.height &&
-          player.y + player.height > p.y) {
+      if (
+        !p.collected &&
+        player.x < p.x - scrollX + p.width &&
+        player.x + player.width > p.x - scrollX &&
+        player.y < p.y + p.height &&
+        player.y + player.height > p.y
+      ) {
         p.collected = true;
       }
     });
@@ -284,15 +296,6 @@
     );
   }
 
-  function checkEnemyCollision() {
-    return enemies.some(enemy =>
-      player.x < enemy.x - scrollX + enemy.width &&
-      player.x + player.width > enemy.x - scrollX &&
-      player.y < enemy.y + enemy.height &&
-      player.y + player.height > enemy.y
-    );
-  }
-
   function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -345,9 +348,9 @@
     player.vy = 0;
     player.jumping = false;
     scrollX = 0;
+    powerUps.forEach(p => p.collected = false);
     keys.ArrowLeft = false;
     keys.ArrowRight = false;
-    powerUps.forEach(p => p.collected = false);
     gameLoop();
   }
 
