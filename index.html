@@ -1,68 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Princess Warrior Quest</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body, html {
-    height: 100%;
-    background: linear-gradient(to top, #e0f7fa, #b2ebf2);
-    font-family: 'Comic Sans MS', cursive;
-    overflow: hidden;
-  }
-  canvas {
-    display: block;
-    background: #fff0f5;
-    margin: 0 auto;
-  }
-  .screen {
-    position: fixed;
-    top:0; left:0; right:0; bottom:0;
-    background: rgba(255,255,255,0.95);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    user-select: none;
-  }
-  .hidden { display: none; }
-  button {
-    background: #ff69b4;
-    border: none;
-    color: white;
-    font-size: 1.4rem;
-    padding: 1rem 2rem;
-    border-radius: 12px;
-    cursor: pointer;
-    margin-top: 20px;
-  }
-  button:active {
-    background: #e0529d;
-  }
-  #jump-btn, #left-btn, #right-btn {
-    position: fixed;
-    bottom: 20px;
-    background: #ff69b4;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    font-size: 1.8rem;
-    user-select: none;
-    cursor: pointer;
-    border: none;
-    color: white;
-    z-index: 50;
-  }
-  #jump-btn:active, #left-btn:active, #right-btn:active {
-    background: #e0529d;
-  }
-  #jump-btn { right: 20px; }
-  #right-btn { left: 100px; }
-  #left-btn { left: 20px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Princess Warrior Quest</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      background: linear-gradient(to top, #e0f7fa, #b2ebf2);
+      font-family: 'Comic Sans MS', cursive;
+      overflow: hidden;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #fff0f5;
+    }
+    .screen {
+      position: absolute;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(255,255,255,0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .hidden { display: none; }
+    button {
+      background: #ff69b4;
+      border: none;
+      color: white;
+      font-size: 1.4rem;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    #jump-btn, #left-btn, #right-btn {
+      position: absolute;
+      bottom: 5%;
+      background: #ff69b4;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 1.8rem;
+      border: none;
+      color: white;
+      z-index: 50;
+      user-select: none;
+    }
+    #jump-btn:active, #left-btn:active, #right-btn:active {
+      background: #e0529d;
+    }
+    #jump-btn { right: 5%; }
+    #right-btn { left: 25%; }
+    #left-btn { left: 10%; }
+  </style>
 </head>
 <body>
 
@@ -71,35 +68,45 @@
   <button id="start-btn">Start</button>
 </div>
 
-<canvas id="gameCanvas" width="800" height="400"></canvas>
+<canvas id="gameCanvas"></canvas>
 
-<!-- Touch Controls -->
-<button id="jump-btn" aria-label="Jump">⬆️</button>
-<button id="left-btn" aria-label="Left">⬅️</button>
-<button id="right-btn" aria-label="Right">➡️</button>
+<!-- Touch Buttons -->
+<button id="jump-btn">⬆️</button>
+<button id="left-btn">⬅️</button>
+<button id="right-btn">➡️</button>
 
 <script>
-  const startScreen = document.getElementById('start-screen');
-  const startBtn = document.getElementById('start-btn');
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  const startScreen = document.getElementById('start-screen');
+  const startBtn = document.getElementById('start-btn');
   const jumpBtn = document.getElementById('jump-btn');
   const leftBtn = document.getElementById('left-btn');
   const rightBtn = document.getElementById('right-btn');
 
-  const GRAVITY = 0.6;
-  const GROUND_Y = 340;
-  const SCROLL_BOUNDARY_LEFT = 200;
-  const SCROLL_BOUNDARY_RIGHT = 600;
+  const GRAVITY = 1;
+  const SCALE = canvas.height / 400;
+  const GROUND_Y = canvas.height - 60 * SCALE;
+  const SCROLL_BOUNDARY_LEFT = canvas.width * 0.25;
+  const SCROLL_BOUNDARY_RIGHT = canvas.width * 0.75;
   const MAP_WIDTH = 3000;
 
   const player = {
     x: 50,
     y: GROUND_Y,
-    width: 40,
-    height: 50,
+    width: 40 * SCALE,
+    height: 50 * SCALE,
     vy: 0,
-    speed: 5,
+    speed: 5 * SCALE,
     jumping: false,
     frame: 0,
     frameTick: 0,
@@ -110,21 +117,21 @@
   const keys = {};
 
   const landBlocks = [];
-  for (let i = 0; i < 60; i++) {
-    if (i % 10 === 0) {
-      landBlocks.push({x: i * 50, y: GROUND_Y + 20, width: 50, height: 80});
-    } else {
-      landBlocks.push({x: i * 50, y: GROUND_Y + 40, width: 50, height: 60});
-    }
+  for (let i = 0; i < 80; i++) {
+    landBlocks.push({
+      x: i * 50,
+      y: GROUND_Y + 20 * SCALE,
+      width: 50 * SCALE,
+      height: 80 * SCALE,
+    });
   }
 
-  const obstacles = [
-    {x: 400, y: GROUND_Y + 10, width: 30, height: 30},
-    {x: 800, y: GROUND_Y + 10, width: 30, height: 30},
-    {x: 1200, y: GROUND_Y + 10, width: 30, height: 30},
-    {x: 1600, y: GROUND_Y + 10, width: 30, height: 30},
-    {x: 2000, y: GROUND_Y + 10, width: 30, height: 30},
-  ];
+  const obstacles = [400, 800, 1200, 1600, 2000].map(x => ({
+    x,
+    y: GROUND_Y + 10 * SCALE,
+    width: 30 * SCALE,
+    height: 30 * SCALE
+  }));
 
   const playerColors = ['#ffc0cb', '#ffb6c1', '#ff69b4', '#ff1493'];
 
@@ -142,8 +149,8 @@
     ctx.fillRect(player.x, player.y, player.width, player.height);
     ctx.fillStyle = 'black';
     ctx.beginPath();
-    ctx.arc(player.x + 10, player.y + 15, 5, 0, Math.PI * 2);
-    ctx.arc(player.x + 30, player.y + 15, 5, 0, Math.PI * 2);
+    ctx.arc(player.x + player.width * 0.25, player.y + player.height * 0.3, 5 * SCALE, 0, Math.PI * 2);
+    ctx.arc(player.x + player.width * 0.75, player.y + player.height * 0.3, 5 * SCALE, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -158,14 +165,6 @@
     ctx.fillStyle = '#c0392b';
     obstacles.forEach(obs => {
       ctx.fillRect(obs.x - scrollX, obs.y, obs.width, obs.height);
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.moveTo(obs.x - scrollX, obs.y + obs.height);
-      ctx.lineTo(obs.x - scrollX + obs.width / 2, obs.y);
-      ctx.lineTo(obs.x - scrollX + obs.width, obs.y + obs.height);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#c0392b';
     });
   }
 
@@ -173,36 +172,11 @@
     player.vy += GRAVITY;
     player.y += player.vy;
 
-    let onLand = false;
-
     if (player.y > GROUND_Y) {
       player.y = GROUND_Y;
       player.vy = 0;
       player.jumping = false;
-      onLand = true;
     }
-
-    landBlocks.forEach(block => {
-      const px = player.x;
-      const py = player.y + player.height;
-      const bx = block.x - scrollX;
-      const by = block.y;
-
-      if (
-        px + player.width > bx &&
-        px < bx + block.width &&
-        py >= by &&
-        py <= by + block.height &&
-        player.vy >= 0
-      ) {
-        player.y = by - player.height;
-        player.vy = 0;
-        player.jumping = false;
-        onLand = true;
-      }
-    });
-
-    return onLand;
   }
 
   function checkObstacleCollision() {
@@ -240,7 +214,7 @@
     applyGravity();
 
     if (checkObstacleCollision()) {
-      alert('Ouch! You hit an obstacle! Restarting...');
+      alert('Oops! You hit something. Try again!');
       startGame();
       return;
     }
@@ -266,42 +240,29 @@
 
   startBtn.addEventListener('click', startGame);
 
+  function tryJump() {
+    if (!player.jumping) {
+      player.vy = -16 * SCALE;
+      player.jumping = true;
+    }
+  }
+
   window.addEventListener('keydown', e => {
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key)) e.preventDefault();
     keys[e.key] = true;
+    if (e.key === 'ArrowUp' || e.key === ' ') tryJump();
   });
 
   window.addEventListener('keyup', e => {
     keys[e.key] = false;
   });
 
-  function tryJump() {
-    if (!player.jumping) {
-      player.vy = -12;
-      player.jumping = true;
-    }
-  }
-
-  window.addEventListener('keydown', e => {
-    if (e.key === 'ArrowUp' || e.key === ' ') tryJump();
-  });
-
-  jumpBtn.addEventListener('mousedown', tryJump);
-  jumpBtn.addEventListener('touchstart', e => {
-    e.preventDefault();
-    tryJump();
-  });
-
-  // Touch move buttons
-  leftBtn.addEventListener('mousedown', () => keys.ArrowLeft = true);
-  rightBtn.addEventListener('mousedown', () => keys.ArrowRight = true);
-  leftBtn.addEventListener('mouseup', () => keys.ArrowLeft = false);
-  rightBtn.addEventListener('mouseup', () => keys.ArrowRight = false);
+  // Touch buttons
+  jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); tryJump(); });
   leftBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowLeft = true; });
   rightBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.ArrowRight = true; });
   leftBtn.addEventListener('touchend', () => keys.ArrowLeft = false);
   rightBtn.addEventListener('touchend', () => keys.ArrowRight = false);
 </script>
-
 </body>
 </html>
