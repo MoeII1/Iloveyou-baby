@@ -1,389 +1,336 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Princess Warrior Quest</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    html,
-    body {
-      height: 100%;
-      overflow: hidden;
-      background: #87ceeb;
-    }
-    canvas {
-      display: block;
-      margin: auto;
-      background: linear-gradient(to top, #87ceeb, #ffffff);
-      touch-action: none;
-    }
-    .controls {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 20px;
-      z-index: 100;
-    }
-    button {
-      width: 60px;
-      height: 60px;
-      background: #ff99bb;
-      border: none;
-      border-radius: 50%;
-      font-size: 24px;
-      color: white;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      user-select: none;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Princess Warrior Quest (Cute Mario Style)</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    background: #a3d9ff; /* sky blue */
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #gameCanvas {
+    display: block;
+    background: #9ee6ff;
+    margin: 0 auto;
+    touch-action: none;
+    image-rendering: pixelated;
+    border: 5px solid #f2c1d1;
+    border-radius: 15px;
+  }
+  #ui {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90vw;
+    max-width: 500px;
+    display: flex;
+    justify-content: space-around;
+    user-select: none;
+  }
+  button.control {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: #ffb6c1;
+    box-shadow: 0 4px 0 #d67a8e;
+    font-size: 30px;
+    color: white;
+    font-weight: bold;
+    user-select: none;
+  }
+  button.control:active {
+    background: #ff84a0;
+    box-shadow: 0 2px 0 #d67a8e;
+    transform: translateY(2px);
+  }
+  #endScreen {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: #fce4eccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #ff6699;
+    text-align: center;
+    visibility: hidden;
+    flex-direction: column;
+  }
+  #endScreen.animate {
+    animation: fadein 2s ease forwards;
+  }
+  @keyframes fadein {
+    0% {opacity: 0; transform: scale(0.7);}
+    100% {opacity: 1; transform: scale(1);}
+  }
+</style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="800" height="450"></canvas>
-  <div class="controls">
-    <button id="left">⯇</button>
-    <button id="jump">⭡</button>
-    <button id="right">⯈</button>
-  </div>
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+<canvas id="gameCanvas" width="480" height="320"></canvas>
 
-    const princess = {
-      x: 100,
-      y: 0, // Will set below to platform top
-      width: 40,
-      height: 60,
-      color: "#ff69b4",
-      vx: 0,
-      vy: 0,
-      speed: 4,
-      jumpStrength: -13,
-      onGround: false,
-      facingRight: true,
-    };
+<div id="ui">
+  <button id="leftBtn" class="control">◀</button>
+  <button id="jumpBtn" class="control">▲</button>
+  <button id="rightBtn" class="control">▶</button>
+</div>
 
-    const keys = { left: false, right: false, jump: false };
-    const gravity = 0.5;
-    let messageOpacity = 0;
-    let sparkleParticles = [];
-    let coinMessage = "";
-    let coinMessageTimer = 0;
+<div id="endScreen">I love you my pretty princess 💖</div>
 
-    // Longer map with harder obstacles, enemies, traps, holes, trampoline, and birds
-    const platforms = [
-      { x: 0, y: 400, width: 300, height: 50 },
-      { x: 350, y: 370, width: 120, height: 20 },
-      { x: 500, y: 340, width: 100, height: 20 },
-      { x: 650, y: 400, width: 250, height: 50 },
-      { x: 950, y: 360, width: 100, height: 20 },
-      { x: 1100, y: 330, width: 150, height: 20 },
-      { x: 1300, y: 400, width: 300, height: 50 },
-      { x: 1650, y: 370, width: 150, height: 20 },
-      { x: 1850, y: 400, width: 350, height: 50 },
-    ];
+<script>
+(() => {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
 
-    // Coins scattered along the path
-    const coins = [
-      { x: 380, y: 320, collected: false },
-      { x: 520, y: 290, collected: false },
-      { x: 700, y: 350, collected: false },
-      { x: 980, y: 310, collected: false },
-      { x: 1150, y: 280, collected: false },
-      { x: 1350, y: 350, collected: false },
-      { x: 1700, y: 320, collected: false },
-      { x: 1900, y: 350, collected: false },
-    ];
+  // Scale canvas for mobile crispness
+  const scale = window.devicePixelRatio || 1;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width = W * scale;
+  canvas.height = H * scale;
+  ctx.scale(scale, scale);
 
-    // Enemies - fast moving and patrol with harder hitboxes
-    const enemies = [
-      { x: 600, y: 370, width: 30, height: 30, vx: 2, color: "#ff6666" },
-      { x: 1000, y: 330, width: 40, height: 40, vx: 3, color: "#ff4444" },
-      { x: 1400, y: 370, width: 35, height: 35, vx: 2.5, color: "#ff5555" },
-      { x: 1800, y: 370, width: 50, height: 50, vx: 2, color: "#ff3333" },
-    ];
+  // Game variables
+  let keys = { left: false, right: false, jump: false };
+  let onGround = false;
+  const gravity = 0.6;
+  const friction = 0.7;
 
-    // Deadly traps (spikes) - touching resets player
-    const spikes = [
-      { x: 800, y: 450 - 20, width: 40, height: 20 },
-      { x: 1750, y: 450 - 20, width: 50, height: 20 },
-    ];
+  // Player properties
+  const player = {
+    x: 50,
+    y: H - 50,
+    w: 32,
+    h: 48,
+    vx: 0,
+    vy: 0,
+    speed: 3,
+    jumping: false,
+    color: '#ff66aa',
+  };
 
-    // Holes (no platform) player must jump over, no platform in these ranges
-    // We'll just leave empty spaces between platforms.
+  // Level data - platforms (x, y, width, height)
+  const platforms = [
+    {x: 0, y: H - 20, w: 1000, h: 20}, // ground long
+    {x: 200, y: H - 70, w: 60, h: 15},
+    {x: 280, y: H - 120, w: 60, h: 15},
+    {x: 400, y: H - 70, w: 60, h: 15},
+    {x: 480, y: H - 150, w: 60, h: 15},
+    {x: 600, y: H - 70, w: 60, h: 15},
+    {x: 680, y: H - 120, w: 60, h: 15},
+    {x: 800, y: H - 70, w: 60, h: 15},
+    {x: 880, y: H - 150, w: 60, h: 15},
+    {x: 950, y: H - 70, w: 60, h: 15},
+  ];
 
-    // Trampoline - jumps higher when player lands on it
-    const trampoline = { x: 1500, y: 400 - 10, width: 60, height: 10 };
+  // Obstacles (spikes) - same coords as platforms
+  const spikes = [
+    {x: 350, y: H - 20 - 15, w: 20, h: 15},
+    {x: 720, y: H - 20 - 15, w: 20, h: 15},
+    {x: 920, y: H - 20 - 15, w: 20, h: 15},
+  ];
 
-    // Birds flying in sky
-    const birds = [
-      { x: 300, y: 100, vx: 1.5, width: 40, height: 20 },
-      { x: 900, y: 140, vx: 2, width: 50, height: 25 },
-      { x: 1400, y: 80, vx: 1.2, width: 45, height: 22 },
-      { x: 1750, y: 130, vx: 1.8, width: 50, height: 25 },
-    ];
+  // Level length
+  const levelWidth = 1100;
 
-    const flag = { x: 2100, y: 350, width: 30, height: 70, reached: false };
+  // Camera offset for side scroll
+  let camX = 0;
 
-    // Set princess y to stand on first platform
-    princess.y = platforms[0].y - princess.height;
+  // Input handlers
+  function keyDown(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.jump = true;
+  }
+  function keyUp(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.jump = false;
+  }
+  window.addEventListener('keydown', keyDown);
+  window.addEventListener('keyup', keyUp);
 
-    let cameraX = princess.x - canvas.width / 3;
-    if (cameraX < 0) cameraX = 0;
+  // Touch controls
+  const leftBtn = document.getElementById('leftBtn');
+  const rightBtn = document.getElementById('rightBtn');
+  const jumpBtn = document.getElementById('jumpBtn');
 
-    function drawPrincess() {
-      ctx.fillStyle = princess.color;
-      ctx.fillRect(princess.x - cameraX, princess.y, princess.width, princess.height);
+  leftBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.left = true; });
+  leftBtn.addEventListener('touchend', e => { e.preventDefault(); keys.left = false; });
+  rightBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.right = true; });
+  rightBtn.addEventListener('touchend', e => { e.preventDefault(); keys.right = false; });
+  jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); keys.jump = true; });
+  jumpBtn.addEventListener('touchend', e => { e.preventDefault(); keys.jump = false; });
 
-      // Eyes
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(princess.x - cameraX + 10, princess.y + 20, 7, 0, Math.PI * 2);
-      ctx.arc(princess.x - cameraX + 30, princess.y + 20, 7, 0, Math.PI * 2);
-      ctx.fill();
+  // Collision detection helper
+  function rectIntersect(r1, r2) {
+    return !(r2.x > r1.x + r1.w || 
+             r2.x + r2.w < r1.x || 
+             r2.y > r1.y + r1.h ||
+             r2.y + r2.h < r1.y);
+  }
 
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(princess.x - cameraX + 10, princess.y + 20, 3, 0, Math.PI * 2);
-      ctx.arc(princess.x - cameraX + 30, princess.y + 20, 3, 0, Math.PI * 2);
-      ctx.fill();
+  // Reset player on death
+  function resetPlayer() {
+    player.x = 50;
+    player.y = H - 50;
+    player.vx = 0;
+    player.vy = 0;
+  }
+
+  // End screen elements
+  const endScreen = document.getElementById('endScreen');
+
+  // Main update loop
+  function update() {
+    // Horizontal movement
+    if (keys.left) {
+      player.vx = -player.speed;
+    } else if (keys.right) {
+      player.vx = player.speed;
+    } else {
+      player.vx *= friction;
+      if (Math.abs(player.vx) < 0.1) player.vx = 0;
     }
 
-    function drawPlatforms() {
-      ctx.fillStyle = "#228b22";
-      platforms.forEach((p) => {
-        ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
-      });
+    // Jumping
+    if (keys.jump && !player.jumping && onGround) {
+      player.vy = -12;
+      player.jumping = true;
+      onGround = false;
     }
 
-    function drawCoins() {
-      coins.forEach((c) => {
-        if (!c.collected) {
-          ctx.beginPath();
-          ctx.arc(c.x - cameraX, c.y, 10, 0, Math.PI * 2);
-          ctx.fillStyle = "gold";
-          ctx.fill();
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = "orange";
-          ctx.stroke();
+    // Gravity
+    player.vy += gravity;
+    if (player.vy > 12) player.vy = 12;
+
+    // Move player
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // Boundaries left/right
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.w > levelWidth) player.x = levelWidth - player.w;
+
+    // Collision with platforms
+    onGround = false;
+    for (let p of platforms) {
+      // Simplified AABB collision check
+      if (player.x + player.w > p.x && player.x < p.x + p.w) {
+        if (player.y + player.h > p.y && player.y + player.h < p.y + p.h) {
+          // Land on platform
+          player.y = p.y - player.h;
+          player.vy = 0;
+          onGround = true;
+          player.jumping = false;
         }
-      });
-    }
-
-    function drawEnemies() {
-      enemies.forEach((e) => {
-        ctx.fillStyle = e.color;
-        ctx.fillRect(e.x - cameraX, e.y, e.width, e.height);
-      });
-    }
-
-    function drawSpikes() {
-      spikes.forEach((s) => {
-        ctx.fillStyle = "silver";
-        const spikeBaseY = s.y + s.height;
-        for (let i = 0; i < s.width; i += 10) {
-          ctx.beginPath();
-          ctx.moveTo(s.x - cameraX + i, spikeBaseY);
-          ctx.lineTo(s.x - cameraX + i + 5, s.y);
-          ctx.lineTo(s.x - cameraX + i + 10, spikeBaseY);
-          ctx.closePath();
-          ctx.fill();
-          ctx.strokeStyle = "gray";
-          ctx.stroke();
-        }
-      });
-    }
-
-    function drawTrampoline() {
-      ctx.fillStyle = "#ff69b4";
-      ctx.fillRect(trampoline.x - cameraX, trampoline.y, trampoline.width, trampoline.height);
-      ctx.strokeStyle = "#ff1493";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(trampoline.x - cameraX + trampoline.width / 2, trampoline.y, trampoline.width / 2, 0, Math.PI, true);
-      ctx.stroke();
-      ctx.lineWidth = 1;
-    }
-
-    function drawBirds() {
-      birds.forEach((b) => {
-        ctx.fillStyle = "#f08080";
-        ctx.beginPath();
-        ctx.ellipse(b.x - cameraX, b.y, b.width / 2, b.height / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Wings
-        ctx.strokeStyle = "#cd5c5c";
-        ctx.beginPath();
-        ctx.moveTo(b.x - cameraX - b.width / 4, b.y);
-        ctx.lineTo(b.x - cameraX, b.y - b.height / 1.5);
-        ctx.lineTo(b.x - cameraX + b.width / 4, b.y);
-        ctx.stroke();
-      });
-    }
-
-    function drawFlag() {
-      ctx.fillStyle = "#66ccff";
-      ctx.fillRect(flag.x - cameraX, flag.y, flag.width, flag.height);
-
-      ctx.fillStyle = "#ff1493";
-      ctx.beginPath();
-      ctx.moveTo(flag.x - cameraX + flag.width, flag.y);
-      ctx.lineTo(flag.x - cameraX + flag.width + 30, flag.y + flag.height / 2);
-      ctx.lineTo(flag.x - cameraX + flag.width, flag.y + flag.height);
-      ctx.fill();
-    }
-
-    function showMessage() {
-      if (messageOpacity < 1) messageOpacity += 0.02;
-
-      // Sparkle background
-      ctx.globalAlpha = messageOpacity;
-      for (let i = 0; i < 150; i++) {
-        ctx.fillStyle = `hsla(${Math.random() * 360},100%,75%,0.6)`;
-        ctx.beginPath();
-        ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 2, 0, Math.PI * 2);
-        ctx.fill();
       }
-
-      // Centered Text
-      ctx.fillStyle = "#ff69b4";
-      ctx.font = "40px Comic Sans MS";
-      ctx.textAlign = "center";
-      ctx.fillText("I love you baby 💖", canvas.width / 2, canvas.height / 2);
-
-      ctx.globalAlpha = 1;
     }
 
-    function drawMagicTrail() {
-      // Add sparkle at princess location only when moving
-      if (princess.vx !== 0) {
-        sparkleParticles.push({
-          x: princess.x + princess.width / 2,
-          y: princess.y + princess.height,
-          alpha: 1,
-          radius: 3 + Math.random() * 2,
-        });
+    // Collision with spikes (death)
+    for (let s of spikes) {
+      if (rectIntersect(player, s)) {
+        resetPlayer();
       }
-
-      sparkleParticles.forEach((p) => {
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = "#ffb6c1";
-        ctx.beginPath();
-        ctx.arc(p.x - cameraX + (Math.random() - 0.5) * 10, p.y + (Math.random() - 0.5) * 5, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-        p.alpha -= 0.02;
-      });
-
-      sparkleParticles = sparkleParticles.filter((p) => p.alpha > 0);
-      ctx.globalAlpha = 1;
     }
 
-    function update() {
-      if (!flag.reached) {
-        if (keys.left) {
-          princess.vx = -princess.speed;
-          princess.facingRight = false;
-        } else if (keys.right) {
-          princess.vx = princess.speed;
-          princess.facingRight = true;
-        } else {
-          princess.vx = 0;
-        }
+    // Update camera (center on player but clamp)
+    camX = player.x - W / 3;
+    if (camX < 0) camX = 0;
+    if (camX > levelWidth - W) camX = levelWidth - W;
 
-        if (keys.jump && princess.onGround) {
-          princess.vy = princess.jumpStrength;
-          princess.onGround = false;
-        }
+    // Check if reached end of level
+    if (player.x + player.w >= levelWidth - 50) {
+      endGame();
+    }
+  }
 
-        princess.vy += gravity;
-        princess.x += princess.vx;
-        princess.y += princess.vy;
+  // Draw everything
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
 
-        princess.onGround = false;
+    // Draw background
+    ctx.fillStyle = '#cceeff';
+    ctx.fillRect(0, 0, W, H);
 
-        // Platform collision
-        platforms.forEach((p) => {
-          if (
-            princess.x + princess.width > p.x &&
-            princess.x < p.x + p.width &&
-            princess.y + princess.height > p.y &&
-            princess.y + princess.height < p.y + p.height + 20 && // extra 20 for slight leniency
-            princess.vy >= 0
-          ) {
-            princess.y = p.y - princess.height;
-            princess.vy = 0;
-            princess.onGround = true;
-          }
-        });
+    // Draw platforms
+    for (let p of platforms) {
+      ctx.fillStyle = '#ff9fc9'; // cute pink platform
+      ctx.fillRect(p.x - camX, p.y, p.w, p.h);
+      // platform outline
+      ctx.strokeStyle = '#e67ea1';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(p.x - camX, p.y, p.w, p.h);
+    }
 
-        // Trampoline collision (bounce)
-        if (
-          princess.x + princess.width > trampoline.x &&
-          princess.x < trampoline.x + trampoline.width &&
-          princess.y + princess.height > trampoline.y &&
-          princess.y + princess.height < trampoline.y + trampoline.height + 20 &&
-          princess.vy >= 0
-        ) {
-          princess.vy = princess.jumpStrength * 1.8; // higher bounce
-          princess.onGround = false;
-        }
+    // Draw spikes
+    for (let s of spikes) {
+      ctx.fillStyle = '#ff4d6d';
+      ctx.beginPath();
+      let spikeBaseX = s.x - camX;
+      let spikeBaseY = s.y + s.h;
+      let spikeWidth = s.w;
+      let spikeHeight = s.h;
+      // draw 3 spikes per obstacle width
+      let spikeCount = 3;
+      let spikeW = spikeWidth / spikeCount;
+      for(let i = 0; i < spikeCount; i++) {
+        ctx.moveTo(spikeBaseX + i * spikeW, spikeBaseY);
+        ctx.lineTo(spikeBaseX + i * spikeW + spikeW / 2, spikeBaseY - spikeHeight);
+        ctx.lineTo(spikeBaseX + (i + 1) * spikeW, spikeBaseY);
+      }
+      ctx.fill();
+    }
 
-        // Coins collection
-        coins.forEach((c) => {
-          if (
-            !c.collected &&
-            princess.x < c.x + 10 &&
-            princess.x + princess.width > c.x - 10 &&
-            princess.y < c.y + 10 &&
-            princess.y + princess.height > c.y - 10
-          ) {
-            c.collected = true;
-            coinMessage = "Yay! Coin! ✨";
-            coinMessageTimer = 60;
-          }
-        });
+    // Draw player (cute pink square with eyes)
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x - camX, player.y, player.w, player.h);
 
-        // Enemy movement and collision
-        enemies.forEach((e) => {
-          e.x += e.vx;
-          if (e.x < 600 || e.x > 2000) e.vx *= -1;
+    // Eyes
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.ellipse(player.x - camX + 10, player.y + 15, 5, 7, 0, 0, 2 * Math.PI);
+    ctx.ellipse(player.x - camX + 22, player.y + 15, 5, 7, 0, 0, 2 * Math.PI);
+    ctx.fill();
 
-          if (
-            princess.x < e.x + e.width &&
-            princess.x + princess.width > e.x &&
-            princess.y < e.y + e.height &&
-            princess.y + princess.height > e.y
-          ) {
-            resetPlayer();
-          }
-        });
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.ellipse(player.x - camX + 10, player.y + 15, 2, 4, 0, 0, 2 * Math.PI);
+    ctx.ellipse(player.x - camX + 22, player.y + 15, 2, 4, 0, 0, 2 * Math.PI);
+    ctx.fill();
+  }
 
-        // Spike collision (deadly traps)
-        spikes.forEach((s) => {
-          if (
-            princess.x + princess.width > s.x &&
-            princess.x < s.x + s.width &&
-            princess.y + princess.height > s.y
-          ) {
-            resetPlayer();
-          }
-        });
+  // Game end handler
+  function endGame() {
+    // Stop game loop and show end message with animation
+    running = false;
+    endScreen.style.visibility = 'visible';
+    endScreen.classList.add('animate');
+  }
 
-        // Check if princess fell into hole (below canvas height)
-        if (princess.y > canvas.height) {
-          resetPlayer();
-        }
+  // Game loop
+  let running = true;
+  function loop() {
+    if (!running) return;
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
 
-        // Flag reach check
-        if (
-          princess.x + princess.width > flag.x &&
-          princess.x < flag.x + flag.width &&
-          princess.y + princess.height > flag.y &&
-          princess.y < flag.y
+  // Start game loop
+  loop();
+
+})();
+</script>
+
+</body>
+</html>
